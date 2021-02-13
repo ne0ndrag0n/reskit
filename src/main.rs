@@ -1,62 +1,40 @@
 extern crate image;
+extern crate clap;
 #[macro_use]
 extern crate colour;
 
-use std::env::{ Args, args };
-use std::process::exit;
+use clap::{App, SubCommand};
 
 mod reskit;
+use reskit::utility;
 use reskit::tileset;
 
-struct ArgumentOption {
-    pub key: String,
-    pub value: String
-}
+fn main() {
+    let matches = App::new( "reskit" )
+        .version( "0.0.1a" )
+        .author( "(c) 2021 Ashley N. <ne0ndrag0n@ne0ndrag0n.com>" )
+        .about( "Sega Megadrive resource kit and format converter" )
+        .subcommand(
+            SubCommand::with_name( "tileset" )
+                .about( "Generate a Sega Megadrive VDP tileset + palette from a 15-colour image" )
+                .arg_from_usage( "-i, --input=<FILE> 'Specify input image'" )
+                .arg_from_usage( "-o, --output=<FILE> 'Specify output file'")
+        )
+        .get_matches();
 
-fn print_help() {
-    println!( "Usage:" );
-    println!( "reskit [plugin] options" );
-    println!( "" );
-    println!( "Available Plugins:" );
-    println!( "   tileset - Convert 15-colour PNG to Sega Genesis VDP format" );
-    println!( "             Output as .bin containing palette, then tiles");
-    println!( "" );
-    println!( "Options:" );
-    println!( "--input         Specify input file for plugin" );
-    println!( "--output        Specify output file/path for plugin" );
-}
-
-fn get_option( arguments: &mut Args ) -> Option< ArgumentOption > {
-    Some( ArgumentOption{ key: arguments.next()?, value: arguments.next()? } )
-}
-
-fn load_module( module: String, arguments: Args ) -> i32 {
-    // Discriminate module
-    match module.as_str() {
-        "reskit" => {
-            42
-        },
-        _ => {
-            red!( "fatal: " ); println!( "invalid module: {}", module );
-            2
+    // Get arguments for tileset
+    if let Some( matches ) = matches.subcommand_matches( "tileset" ) {
+        // Get input and output filenames
+        if let Some( input_filename ) = matches.value_of( "input" ) {
+            if let Some( output_filename ) = matches.value_of( "output" ) {
+                return tileset::generate( input_filename, output_filename );
+            } else {
+                utility::print_error( "expected: output_filename (-o,--output)" );
+            }
+        } else {
+            utility::print_error( "expected: input filename (-i,--input)" );
         }
     }
-}
 
-fn main() {
-    cyan!( "reskit" ); println!( " - Sega Genesis Resource Kit (v0.0.1a)" );
-    println!( "(c) 2021 Ashley N. (ne0ndrag0n)" );
-
-    let mut args = args();
-    args.next(); // Burn arg1
-
-    let mode = match args.next() {
-        Some( mode ) => mode,
-        None => {
-            print_help();
-            exit( 1 );
-        }
-    };
-
-    exit( load_module( mode, args ) );
+    utility::print_error( "no plugin provided (try --help)" );
 }
