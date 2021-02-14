@@ -68,8 +68,17 @@ pub fn generate( image_filename: &str, output_filename: &str ) {
 			}
 		}
 
+		let mut output_palette: Vec< u8 > = Vec::new();
+		for i in 0..palette.len() {
+			let bytes = palette[ i ].to_be_bytes();
+			for i in 0..4 {
+				output_palette.push( bytes[ i ] );
+			}
+		}
+
 		let output_try = File::create( output_filename );
 		if let Ok( mut output_file ) = output_try {
+			output_file.write( &output_palette ).unwrap();
 			output_file.write( &body ).unwrap();
 			utility::print_good( format!( "converted file {}", image_filename ).as_str() );
 		} else {
