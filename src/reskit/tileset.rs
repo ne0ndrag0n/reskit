@@ -71,7 +71,7 @@ pub fn generate( image_filename: &str, output_filename: &str ) {
 		let mut output_palette: Vec< u8 > = Vec::new();
 		for i in 0..palette.len() {
 			let bytes = palette[ i ].to_be_bytes();
-			for i in 0..4 {
+			for i in 0..2 {
 				output_palette.push( bytes[ i ] );
 			}
 		}
