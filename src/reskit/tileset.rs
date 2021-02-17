@@ -56,7 +56,7 @@ pub fn generate( image_filename: &str, output_filename: &str ) {
 					let mut series: u32 = 0;
 
 					for cell_x in 0..8 {
-						let nibble = get_pixel( &img, &mut palette, cell_x + x, cell_y + y ) << ( 7 - cell_x );
+						let nibble: u32 = get_pixel( &img, &mut palette, cell_x + x, cell_y + y ) << ( ( 7 - cell_x ) * 4 );
 						series = series | nibble;
 					}
 
