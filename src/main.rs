@@ -3,7 +3,7 @@ extern crate clap;
 #[macro_use]
 extern crate colour;
 
-use clap::{App, SubCommand};
+use clap::{App, Arg, SubCommand};
 
 mod reskit;
 use reskit::utility;
@@ -19,6 +19,14 @@ fn main() {
                 .about( "Generate a Sega Megadrive VDP tileset + palette from a 15-colour image" )
                 .arg_from_usage( "-i, --input=<FILE> 'Specify input image'" )
                 .arg_from_usage( "-o, --output=<FILE> 'Specify output file'")
+                .arg(
+                    Arg::with_name( "FORMAT" )
+                        .short( "f" )
+                        .long( "format" )
+                        .help( "Specify output format for tileset (valid FORMAT options: bin, inc)")
+                        .default_value( "bin" )
+                        .takes_value( true )
+                )
         )
         .get_matches();
 
@@ -27,7 +35,7 @@ fn main() {
         // Get input and output filenames
         if let Some( input_filename ) = matches.value_of( "input" ) {
             if let Some( output_filename ) = matches.value_of( "output" ) {
-                return tileset::generate( input_filename, output_filename );
+                return tileset::generate( input_filename, output_filename, matches.value_of( "FORMAT" ).unwrap() );
             } else {
                 utility::print_error( "expected: output_filename (-o,--output)" );
             }

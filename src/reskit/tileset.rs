@@ -40,7 +40,26 @@ fn get_pixel( image: &DynamicImage, palette: &mut [u16; 16], x: u32, y: u32 ) ->
 	color_to_palette( pixel[ 0 ].into(), pixel[ 1 ].into(), pixel[ 2 ].into(), palette )
 }
 
-pub fn generate( image_filename: &str, output_filename: &str ) {
+fn output_bin( image_filename: &str, output_filename: &str, palette: [u16; 16], body: Vec<u8> ) {
+	let mut output_palette: Vec< u8 > = Vec::new();
+	for i in 0..palette.len() {
+		let bytes = palette[ i ].to_be_bytes();
+		for i in 0..2 {
+			output_palette.push( bytes[ i ] );
+		}
+	}
+
+	let output_try = File::create( output_filename );
+	if let Ok( mut output_file ) = output_try {
+		output_file.write( &output_palette ).unwrap();
+		output_file.write( &body ).unwrap();
+		utility::print_good( format!( "converted file {}", image_filename ).as_str() );
+	} else {
+		utility::print_error( format!( "could not open filename for output {}", output_filename ).as_str() );
+	}
+}
+
+pub fn generate( image_filename: &str, output_filename: &str, output_mode: &str ) {
 	let img = image::open( image_filename );
 	if let Ok( img ) = img {
 		let ( mut max_x, mut max_y ) = img.dimensions();
@@ -68,21 +87,10 @@ pub fn generate( image_filename: &str, output_filename: &str ) {
 			}
 		}
 
-		let mut output_palette: Vec< u8 > = Vec::new();
-		for i in 0..palette.len() {
-			let bytes = palette[ i ].to_be_bytes();
-			for i in 0..2 {
-				output_palette.push( bytes[ i ] );
-			}
-		}
-
-		let output_try = File::create( output_filename );
-		if let Ok( mut output_file ) = output_try {
-			output_file.write( &output_palette ).unwrap();
-			output_file.write( &body ).unwrap();
-			utility::print_good( format!( "converted file {}", image_filename ).as_str() );
+		if output_mode == "bin" {
+			output_bin( image_filename, output_filename, palette, body );
 		} else {
-			utility::print_error( format!( "could not open filename for output {}", output_filename ).as_str() );
+			utility::print_error( format!( "invalid output mode {}", output_mode ).as_str() );
 		}
 	} else {
 		utility::print_error( format!( "could not open filename {}", image_filename ).as_str() );
