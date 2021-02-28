@@ -1,5 +1,6 @@
 use crate::reskit::utility;
 use std::process::exit;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use image::{ GenericImageView, DynamicImage };
@@ -59,6 +60,60 @@ fn output_bin( image_filename: &str, output_filename: &str, palette: [u16; 16], 
 	}
 }
 
+fn output_inc( image_filename: &str, output_filename: &str, palette: [u16; 16], body: Vec<u8> ) {
+	let mut output_palette: Vec< u8 > = Vec::new();
+	for i in 0..palette.len() {
+		let bytes = palette[ i ].to_be_bytes();
+		for i in 0..2 {
+			output_palette.push( bytes[ i ] );
+		}
+	}
+
+	let mut output_c: String = String::new();
+	let mut output_h: String = String::new();
+
+	// Set output_h based on image_filename
+	output_h += "#pragma once\n\n";
+	output_h += &format!( "extern const unsigned char {}[];\n", output_filename );
+	output_h += &format!( "extern const unsigned int {}_len;\n", output_filename );
+
+	let mut row_counter = 12;
+	// Spray palette
+	output_c += &format!( "const unsigned char {}[] = {{\n", output_filename );
+	for i in 0..32 {
+		if row_counter == 0 {
+			row_counter = 12;
+			output_c += "\n";
+		} else {
+			row_counter = row_counter - 1;
+		}
+
+		output_c += &format!( "0x{:X},", output_palette[ i ] );
+	}
+
+	for i in 0..body.len() {
+		if row_counter == 0 {
+			row_counter = 12;
+			output_c += "\n";
+		} else {
+			row_counter = row_counter - 1;
+		}
+
+		output_c += &format!( "0x{:X}", body[ i ] );
+		if i != ( body.len() - 1 ) {
+			output_c += ",";
+		}
+	}
+
+	output_c += "\n};\n";
+	output_c += &format!( "const unsigned int {}_len = {}\n", output_filename, output_palette.len() + body.len() );
+
+	fs::write( output_filename.to_string() + ".h", output_h ).expect( "Could not write header file" );
+	fs::write( output_filename.to_string() + ".c", output_c ).expect( "Could not write source file" );
+
+	utility::print_good( format!( "converted file {}", image_filename ).as_str() );
+}
+
 pub fn generate( image_filename: &str, output_filename: &str, output_mode: &str ) {
 	let img = image::open( image_filename );
 	if let Ok( img ) = img {
@@ -89,6 +144,8 @@ pub fn generate( image_filename: &str, output_filename: &str, output_mode: &str 
 
 		if output_mode == "bin" {
 			output_bin( image_filename, output_filename, palette, body );
+		} else if output_mode == "inc" {
+			output_inc( image_filename, output_filename, palette, body );
 		} else {
 			utility::print_error( format!( "invalid output mode {}", output_mode ).as_str() );
 		}
